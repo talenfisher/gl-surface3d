@@ -1,7 +1,7 @@
 {
-  "name": "gl-surface3d",
+  "name": "gl-textured-surface3d",
   "version": "1.3.8",
-  "description": "Renders parametric surfaces in 3D",
+  "description": "Modified version of gl-surface3d to accept a texture map",
   "main": "surface.js",
   "directories": {
     "example": "example"
@@ -59,7 +59,7 @@
     "height",
     "field"
   ],
-  "author": "Mikola Lysenko",
+  "author": "Talen Fisher",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/gl-vis/gl-surface3d/issues"
