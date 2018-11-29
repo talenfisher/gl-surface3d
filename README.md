@@ -1,6 +1,4 @@
-gl-surface3d
-===============
-3D parametric surface plotting, compatible with [gl-vis](http://github.com/gl-vis).
+Modified version of gl-surface3d to accept a texture map instead of a colormap
 
 # Example
 
