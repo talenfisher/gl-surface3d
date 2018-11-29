@@ -24,7 +24,7 @@ void main() {
   value = f.z;
   planeCoordinate = uv.xy;
 
-  vColor = texture2D(colormap, vec2(0.0, textureCoord));
+  vColor = texture2D(colormap, uv.xy);
 
   //Lighting geometry parameters
   vec4 cameraCoordinate = view * worldPosition;
