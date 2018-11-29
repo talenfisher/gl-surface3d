@@ -30,11 +30,7 @@ void main() {
 
   float specular = max(beckmann(L, V, N, roughness), 0.);
   float diffuse  = min(kambient + kdiffuse * max(dot(N, L), 0.0), 1.0);
-
-  //decide how to interpolate color — in vertex or in fragment
-  vec4 surfaceColor = step(vertexColor, .5) * texture2D(colormap, vec2(value, value)) + step(.5, vertexColor) * vColor;
-
-  vec4 litColor = surfaceColor.a * vec4(diffuse * surfaceColor.rgb + kspecular * vec3(1,1,1) * specular,  1.0);
+  vec4 litColor = vColor.a * vec4(diffuse * vColor.rgb + kspecular * vec3(1,1,1) * specular,  1.0);
 
   gl_FragColor = mix(litColor, contourColor, contourTint) * opacity;
 }

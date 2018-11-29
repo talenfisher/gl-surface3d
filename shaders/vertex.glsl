@@ -3,6 +3,7 @@ precision mediump float;
 attribute vec4 uv;
 attribute vec3 f;
 attribute vec3 normal;
+attribute float textureCoord;
 
 uniform mat4 model, view, projection, inverseModel;
 uniform vec3 lightPosition, eyePosition;
@@ -23,7 +24,7 @@ void main() {
   value = f.z;
   planeCoordinate = uv.xy;
 
-  vColor = texture2D(colormap, vec2(value, value));
+  vColor = texture2D(colormap, vec2(0.0, 0.0));
 
   //Lighting geometry parameters
   vec4 cameraCoordinate = view * worldPosition;

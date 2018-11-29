@@ -23,7 +23,7 @@ var createContourShader = shaders.createContourShader
 var createPickShader = shaders.createPickShader
 var createPickContourShader = shaders.createPickContourShader
 
-var SURFACE_VERTEX_SIZE = 4 * (4 + 3 + 3)
+var SURFACE_VERTEX_SIZE = 4 * (4 + 3 + 3 + 1)
 
 var IDENTITY = [
   1, 0, 0, 0,
@@ -76,6 +76,7 @@ function genColormap (name) {
     return [c[0], c[1], c[2], 255 * c[3]]
   })])
   ops.divseq(x, 255.0)
+
   return x
 }
 
@@ -93,7 +94,8 @@ function SurfacePlot (
   contourBuffer,
   contourVAO,
   dynamicBuffer,
-  dynamicVAO) {
+  dynamicVAO,
+  texture) {
   this.gl = gl
   this.shape = shape
   this.bounds = bounds
@@ -119,6 +121,8 @@ function SurfacePlot (
   this._dynamicVAO = dynamicVAO
   this._dynamicOffsets = [0, 0, 0]
   this._dynamicCounts = [0, 0, 0]
+
+  this.texture = texture;
 
   this.contourWidth = [ 1, 1, 1 ]
   this.contourLevels = [[1], [1], [1]]
@@ -352,7 +356,7 @@ function drawCore (params, transparent) {
     this._vao.bind()
 
     if (this.showSurface && this._vertexCount) {
-      this._vao.draw(gl.TRIANGLES, this._vertexCount)
+      this._vao.draw(gl.TRIANGLES, this._vertexCount);
     }
 
     // Draw projections of surface
@@ -363,7 +367,7 @@ function drawCore (params, transparent) {
       this._shader.uniforms.model = projectData.projections[i]
       this._shader.uniforms.clipBounds = projectData.clipBounds[i]
       this._vao.draw(gl.TRIANGLES, this._vertexCount)
-    }
+    } 
 
     this._vao.unbind()
   }
@@ -899,12 +903,13 @@ proto.update = function (params) {
     var lo_intensity = Infinity
     var hi_intensity = -Infinity
     var count = (shape[0] - 1) * (shape[1] - 1) * 6
-    var tverts = pool.mallocFloat(bits.nextPow2(10 * count))
+    var tverts = pool.mallocFloat(bits.nextPow2(11 * count))
     var tptr = 0
     var vertexCount = 0
     for (i = 0; i < shape[0] - 1; ++i) {
       j_loop:
       for (j = 0; j < shape[1] - 1; ++j) {
+        
         // Test for NaNs
         for (var dx = 0; dx < 2; ++dx) {
           for (var dy = 0; dy < 2; ++dy) {
@@ -916,6 +921,7 @@ proto.update = function (params) {
             }
           }
         }
+
         for (k = 0; k < 6; ++k) {
           var r = i + QUAD[k][0]
           var c = j + QUAD[k][1]
@@ -932,16 +938,24 @@ proto.update = function (params) {
             vf = params.intensity.get(r, c)
           }
 
+          // uv
           tverts[tptr++] = r
           tverts[tptr++] = c
           tverts[tptr++] = tx
           tverts[tptr++] = ty
+          
+          // f
           tverts[tptr++] = f
           tverts[tptr++] = 0
           tverts[tptr++] = vf
+
+          // normal
           tverts[tptr++] = nx
           tverts[tptr++] = ny
           tverts[tptr++] = nz
+
+          // texture
+          tverts[tptr++] = this.texture.coords.get(i, j);
 
           lo[0] = Math.min(lo[0], tx)
           lo[1] = Math.min(lo[1], ty)
@@ -964,12 +978,13 @@ proto.update = function (params) {
     }
 
     // Scale all vertex intensities
-    for (i = 6; i < tptr; i += 10) {
+    for (i = 6; i < tptr; i += 11) {
       tverts[i] = (tverts[i] - lo_intensity) / (hi_intensity - lo_intensity)
     }
 
     this._vertexCount = vertexCount
     this._coordinateBuffer.update(tverts.subarray(0, tptr))
+    
     pool.freeFloat(tverts)
     pool.free(normals.data)
 
@@ -1105,12 +1120,13 @@ proto.update = function (params) {
     for (i = 0; i < contourVerts.length; ++i) {
       floatBuffer[i] = contourVerts[i]
     }
+
     this._contourBuffer.update(floatBuffer)
     pool.freeFloat(floatBuffer)
   }
 
-  if (params.colormap) {
-    this._colorMap.setPixels(genColormap(params.colormap))
+  if(params.texture) {
+      this._colorMap.setPixels(params.texture.map);
   }
 }
 
@@ -1262,6 +1278,12 @@ function createSurfacePlot (params) {
       size: 3,
       stride: SURFACE_VERTEX_SIZE,
       offset: 28
+    },
+    {
+      buffer: coordinateBuffer,
+      size: 1,
+      stride: SURFACE_VERTEX_SIZE,
+      offset: 40
     }
   ])
 
@@ -1289,9 +1311,8 @@ function createSurfacePlot (params) {
       type: gl.FLOAT
     }])
 
-  var cmap = createTexture(gl, 1, N_COLORS, gl.RGBA, gl.UNSIGNED_BYTE)
-  cmap.minFilter = gl.LINEAR
-  cmap.magFilter = gl.LINEAR
+  
+  var cmap = createTexture(gl, params.texture.map);
 
   var surface = new SurfacePlot(
     gl,
@@ -1307,7 +1328,8 @@ function createSurfacePlot (params) {
     contourBuffer,
     contourVAO,
     dynamicBuffer,
-    dynamicVAO
+    dynamicVAO,
+    params.texture
   )
 
   var nparams = {
@@ -1316,7 +1338,6 @@ function createSurfacePlot (params) {
   for (var id in params) {
     nparams[id] = params[id]
   }
-  nparams.colormap = nparams.colormap || 'jet'
 
   surface.update(nparams)
 
