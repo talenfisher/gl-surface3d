@@ -23,7 +23,7 @@ var createContourShader = shaders.createContourShader
 var createPickShader = shaders.createPickShader
 var createPickContourShader = shaders.createPickContourShader
 
-var SURFACE_VERTEX_SIZE = 4 * (4 + 3 + 3)
+var SURFACE_VERTEX_SIZE = 4 * (4 + 3 + 3 + 2)
 
 var IDENTITY = [
   1, 0, 0, 0,
@@ -94,8 +94,7 @@ function SurfacePlot (
   contourBuffer,
   contourVAO,
   dynamicBuffer,
-  dynamicVAO,
-  texture) {
+  dynamicVAO) {
   this.gl = gl
   this.shape = shape
   this.bounds = bounds
@@ -121,8 +120,6 @@ function SurfacePlot (
   this._dynamicVAO = dynamicVAO
   this._dynamicOffsets = [0, 0, 0]
   this._dynamicCounts = [0, 0, 0]
-
-  this.texture = texture;
 
   this.contourWidth = [ 1, 1, 1 ]
   this.contourLevels = [[1], [1], [1]]
@@ -903,7 +900,7 @@ proto.update = function (params) {
     var lo_intensity = Infinity
     var hi_intensity = -Infinity
     var count = (shape[0] - 1) * (shape[1] - 1) * 6
-    var tverts = pool.mallocFloat(bits.nextPow2(10 * count))
+    var tverts = pool.mallocFloat(bits.nextPow2(12 * count))
     var tptr = 0
     var vertexCount = 0
     for (i = 0; i < shape[0] - 1; ++i) {
@@ -954,6 +951,10 @@ proto.update = function (params) {
           tverts[tptr++] = ny
           tverts[tptr++] = nz
 
+          // texCoord
+          tverts[tptr++] = i / shape[0]
+          tverts[tptr++] = j / shape[1]
+
           lo[0] = Math.min(lo[0], tx)
           lo[1] = Math.min(lo[1], ty)
           lo[2] = Math.min(lo[2], f)
@@ -975,7 +976,7 @@ proto.update = function (params) {
     }
 
     // Scale all vertex intensities
-    for (i = 6; i < tptr; i += 10) {
+    for (i = 6; i < tptr; i += 12) {
       tverts[i] = (tverts[i] - lo_intensity) / (hi_intensity - lo_intensity)
     }
 
@@ -1275,6 +1276,12 @@ function createSurfacePlot (params) {
       size: 3,
       stride: SURFACE_VERTEX_SIZE,
       offset: 28
+    },
+    {
+        buffer: coordinateBuffer,
+        size: 2,
+        stride: SURFACE_VERTEX_SIZE,
+        offset: 40
     }
   ])
 

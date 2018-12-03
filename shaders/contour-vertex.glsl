@@ -27,7 +27,7 @@ void main() {
   worldCoordinate = dataCoordinate;
   planeCoordinate = uv.zw;
 
-  vColor = texture2D(colormap, vec2(value, value));
+  vColor = texture2D(colormap, uv.xy);
 
   //Don't do lighting for contours
   surfaceNormal   = vec3(1,0,0);
